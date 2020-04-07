@@ -23,12 +23,13 @@ If you are trying to find the best threading configuration for some code like:
 You could wrap it using the `kamerton` generator like so:
     
     import timeit
-    from kamerton import kamerton, set_threading
+    from kamerton import nelder_mead
+    from kamerton.callbacks import set_threading
 
     # `cb` is a callback that will set the inter- and intra-op thread count for
     # each iteration
     # the vertex represents the initial thread counts
-    for attempt in kamerton(cb=set_threading, vertex=[22, 2]):
+    for attempt in nelder_mead(cb=set_threading, vertex=[22, 2]):
       # the model has to be created with the threading configuration, and therefore
       # has to be instantiated inside this loop
       res = ResNet50()

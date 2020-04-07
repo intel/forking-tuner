@@ -10,7 +10,7 @@ from statistics import stdev
 from typing import List, Callable, Tuple, Any, Generator
 import logging
 
-__all__ = ['logger', 'kamerton', 'set_threading', 'set_log_level']
+__all__ = ['logger', 'nelder_mead', 'set_log_level']
 
 
 Callback = Callable[[List[float]], None]
@@ -50,8 +50,7 @@ def _do_fork(cb: Callback, params: List[float]) -> Tuple[bool, Any]:
     line = None
     for line in read:
       pass
-    line = float(line.strip())
-    return (True, line)
+    return (True, float(line.strip()))
 
   # child
   os.close(r)
@@ -94,9 +93,9 @@ def _shrink(simplex: SimplexWithObjectives) -> None:
                      zip(simplex[0][1], simplex[i][1])]
 
 
-def kamerton(cb: Callback, vertex: List[float],
-             step_sizes: Any = None, iterations: int = 200,
-             threshold: float = 1e-2) -> Generator:
+def nelder_mead(cb: Callback, vertex: List[float],
+                step_sizes: Any = None, iterations: int = 200,
+                threshold: float = 1e-2) -> Generator:
   """
   The Nelder-Mead-based forking tuner.  See the project README.md or
   `kamerton.examples` for details.
@@ -111,7 +110,7 @@ def kamerton(cb: Callback, vertex: List[float],
     is_parent, value = _do_fork(cb, simplex[index][1])
     if not is_parent:
       yield simplex[index][1]
-      raise StopIteration
+      return
     simplex[index][0] = value
 
   # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
@@ -130,7 +129,7 @@ def kamerton(cb: Callback, vertex: List[float],
     is_parent, value = _do_fork(cb, reflected)
     if not is_parent:
       yield reflected
-      raise StopIteration
+      return
     if value > simplex[0][0] and value < simplex[1][0]:
       simplex[-1] = [value, reflected]
       continue
@@ -141,7 +140,7 @@ def kamerton(cb: Callback, vertex: List[float],
       is_parent, value_expanded = _do_fork(cb, expanded)
       if not is_parent:
         yield expanded
-        raise StopIteration
+        return
       if value_expanded < value:
         simplex[-1] = [value_expanded, expanded]
         continue
@@ -153,7 +152,7 @@ def kamerton(cb: Callback, vertex: List[float],
     is_parent, value = _do_fork(cb, contracted)
     if not is_parent:
       yield contracted
-      raise StopIteration
+      return
     if value < simplex[-1][0]:
       simplex[-1] = [value, contracted]
       continue
@@ -164,26 +163,13 @@ def kamerton(cb: Callback, vertex: List[float],
       is_parent, value = _do_fork(cb, simplex[i][1])
       if not is_parent:
         yield simplex[i][1]
-        raise StopIteration
+        return
       simplex[i][0] = value
 
   # parent cleanup
   cb(simplex[0][1])
   yield simplex[0][1]
-  raise StopIteration
-
-
-def set_threading(params):
-  """
-  Convenience function that sets the intra- and inter-op parallelism threads
-  to be used as a callback for `kamerton`.
-  """
-  import tensorflow as tf
-
-  tf.config.threading.set_intra_op_parallelism_threads(
-      max([int(params[0]), 1]))
-  tf.config.threading.set_inter_op_parallelism_threads(
-      max([int(params[1]), 1]))
+  return
 
 
 def set_log_level(level):
