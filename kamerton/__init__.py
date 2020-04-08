@@ -7,7 +7,7 @@ Kamerton: the forking tuner for tensorflow.
 import os
 import sys
 from statistics import stdev
-from typing import List, Callable, Tuple, Any, Generator
+from typing import List, Callable, Tuple, Any, Generator, Sequence
 import logging
 
 __all__ = ['logger', 'nelder_mead', 'set_log_level']
@@ -23,7 +23,7 @@ _logger_handler.setLevel(logging.DEBUG)
 logger.addHandler(_logger_handler)
 
 
-def _make_simplex(vertex: List[float],
+def _make_simplex(vertex: Sequence,
                   step_sizes: Any = None) -> List[List[float]]:
   dim = len(vertex)
   step_sizes = step_sizes or [1 for i in range(dim)]
@@ -93,13 +93,18 @@ def _shrink(simplex: SimplexWithObjectives) -> None:
                      zip(simplex[0][1], simplex[i][1])]
 
 
-def nelder_mead(cb: Callback, vertex: List[float],
+def nelder_mead(cb: Callback, vertex: Sequence,
                 step_sizes: Any = None, iterations: int = 200,
                 threshold: float = 1e-2) -> Generator:
   """
   The Nelder-Mead-based forking tuner.  See the project README.md or
   `kamerton.examples` for details.
   """
+  VertexType = type(vertex)  # type: Any
+  try:
+    VertexType = VertexType._make
+  except AttributeError:
+    pass
   sim = _make_simplex(vertex, step_sizes)
   # zip with objectives
   simplex = [list(i) for i in zip([0.0] * len(sim), sim)]  # type: List
@@ -109,7 +114,7 @@ def nelder_mead(cb: Callback, vertex: List[float],
   for index in range(len_simplex):
     is_parent, value = _do_fork(cb, simplex[index][1])
     if not is_parent:
-      yield simplex[index][1]
+      yield VertexType(simplex[index][1])
       return
     simplex[index][0] = value
 
@@ -117,7 +122,9 @@ def nelder_mead(cb: Callback, vertex: List[float],
   for _ in range(iterations):
     # 1. Order, check early termination
     simplex = sorted(simplex)
-    logger.info('objectives, simplexes: ' + str(simplex))
+    logger.info('simplexes with objectives:')
+    for objective, vertex in simplex:
+      logger.info(f'\t{VertexType(vertex)}: {objective}')
     if stdev([s[0] for s in simplex]) < threshold:
       break
 
@@ -128,7 +135,7 @@ def nelder_mead(cb: Callback, vertex: List[float],
     reflected = _reflect(simplex, center)
     is_parent, value = _do_fork(cb, reflected)
     if not is_parent:
-      yield reflected
+      yield VertexType(reflected)
       return
     if value > simplex[0][0] and value < simplex[1][0]:
       simplex[-1] = [value, reflected]
@@ -139,7 +146,7 @@ def nelder_mead(cb: Callback, vertex: List[float],
       expanded = _expand(reflected, center)
       is_parent, value_expanded = _do_fork(cb, expanded)
       if not is_parent:
-        yield expanded
+        yield VertexType(expanded)
         return
       if value_expanded < value:
         simplex[-1] = [value_expanded, expanded]
@@ -151,7 +158,7 @@ def nelder_mead(cb: Callback, vertex: List[float],
     contracted = _contract(simplex, center)
     is_parent, value = _do_fork(cb, contracted)
     if not is_parent:
-      yield contracted
+      yield VertexType(contracted)
       return
     if value < simplex[-1][0]:
       simplex[-1] = [value, contracted]
@@ -162,13 +169,13 @@ def nelder_mead(cb: Callback, vertex: List[float],
     for i in range(1, len(simplex)):
       is_parent, value = _do_fork(cb, simplex[i][1])
       if not is_parent:
-        yield simplex[i][1]
+        yield VertexType(simplex[i][1])
         return
       simplex[i][0] = value
 
   # parent cleanup
   cb(simplex[0][1])
-  yield simplex[0][1]
+  yield VertexType(simplex[0][1])
   return
 
 
