@@ -1,7 +1,7 @@
 import logging
 from copy import deepcopy
 
-from mock import MagicMock, sentinel, call, ANY
+from mock import MagicMock, sentinel, call
 from pytest import fixture, mark
 
 from kamerton import logger, nelder_mead, set_log_level
@@ -48,17 +48,15 @@ def test_make_simplex():
 def test_do_fork_parent(os):
   os.fdopen.return_value = ['a\n', 'b\n', '3\n']
   os.fork.return_value = 1
-  assert _do_fork(lambda x, y: None, [1, 2]) == (True, 3.0)
+  assert _do_fork() == (True, 3.0)
 
 
 def test_do_fork_child(patch, os):
   sys = patch('sys')
   os.fdopen.return_value = sentinel.write
-  os.fork.return_value = 0
-  cb = MagicMock()
-  assert _do_fork(cb, sentinel.params) == (False, None)
+  os.fork. return_value = 0
+  assert _do_fork() == (False, None)
   assert sys.stdout == sentinel.write
-  cb.assert_called_once_with(sentinel.params)
 
 
 def test_centroid():
@@ -67,6 +65,10 @@ def test_centroid():
 
 def test_reflect():
   assert _reflect(simplex, centroid) == [-3.0, -1.0]
+
+
+def test_expand():
+  assert _expand([2.0, 3.0], centroid) == [-1.0, -2.0]
 
 
 def test_contract():
@@ -85,9 +87,9 @@ def test_shrink():
 def test_nelder_mead_parent(patch, simp, stdev, fork, value):
   fork.side_effect = [(True, v) for v in [1, 2, 3, *value]]
   cb = MagicMock()
-  for attempt in nelder_mead(cb, sentinel.vertex, sentinel.step_sizes):
+  for attempt in nelder_mead(sentinel.vertex, sentinel.step_sizes, cb=cb):
     pass
-  fork.assert_has_calls([call(ANY, ANY)] * (len(value) + 3))
+  fork.assert_has_calls([call()] * (len(value) + 3))
 
 
 @mark.parametrize('value', values)
@@ -95,14 +97,14 @@ def test_nelder_mead_child(patch, simp, stdev, fork, value):
   fork.side_effect = [(True, v) for v in
                       [1, 2, 3, *value[:-1]]] + [(False, value[-1])]
   cb = MagicMock()
-  for attempt in nelder_mead(cb, sentinel.vertex, sentinel.step_sizes):
+  for attempt in nelder_mead(sentinel.vertex, sentinel.step_sizes, cb=cb):
     pass
-  fork.assert_has_calls([call(ANY, ANY)] * (len(value) + 3))
+  fork.assert_has_calls([call()] * (len(value) + 3))
 
 
 def test_nelder_mead_child_one(patch, simp, stdev, fork):
   fork.side_effect = [(False, 1)]
   cb = MagicMock()
-  for attempt in nelder_mead(cb, sentinel.vertex, sentinel.step_sizes):
+  for attempt in nelder_mead(sentinel.vertex, sentinel.step_sizes, cb=cb):
     pass
-  fork.assert_has_calls([call(ANY, ANY)])
+  fork.assert_has_calls([call()])

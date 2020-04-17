@@ -17,7 +17,7 @@ from collections import namedtuple
 import numpy as np
 
 from kamerton import nelder_mead, set_log_level
-from kamerton.callbacks import set_threading
+from kamerton.util import set_threading
 
 
 def main():
@@ -31,8 +31,9 @@ def main():
 
   print("This will take a while...")
   set_log_level(logging.INFO)
-  for attempt in nelder_mead(set_threading, threading(22, 2), [11, 1],
-                             threshold=0.02, iterations=10):
+  for attempt in nelder_mead(threading(22, 2), [11, 1], threshold=0.02,
+                             iterations=10):
+    set_threading(attempt)
     # N.B. ResNet50 creation has to happen inside this loop because kamerton
     # sets the threading model and that has to happen before any tensors
     # are instantiated

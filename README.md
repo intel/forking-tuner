@@ -1,9 +1,10 @@
-# Kamerton:  The Forking Tuner for TensorFlow
+# Kamerton:  The Forking Tuner
 
 ## What It Does
 
-Kamerton is a pure python library with no dependencies that automatically finds
-the optimal number of inter- and intra-op threads for a TensorFlow model.
+Kamerton is a pure python library with no dependencies that was originally
+intended to optimize the number of inter- and intra-op threads for TensorFlow
+models, but it can be used to minimise any other metrics.
 
 
 ## Installation
@@ -24,14 +25,13 @@ You could wrap it using the `kamerton` generator like so:
     
     import timeit
     from kamerton import nelder_mead
-    from kamerton.callbacks import set_threading
+    from kamerton.util import set_threading
 
-    # `cb` is a callback that will set the inter- and intra-op thread count for
-    # each iteration
-    # the vertex represents the initial thread counts
-    for attempt in nelder_mead(cb=set_threading, vertex=[22, 2]):
+    # the vertex here represents the initial thread counts
+    for attempt in nelder_mead(vertex=[22, 2]):
+      set_threading(attempt)
       # the model has to be created with the threading configuration, and therefore
-      # has to be instantiated inside this loop
+      # has to be instantiated after the threading has been set
       res = ResNet50()
       print(attempt)  # will output the best vertex, i.e. inter- and intra- count
       # kamerton will use the last printed value as its objective for the attempt
@@ -57,3 +57,9 @@ threads, runs the workload, and reports the results back to the parent.
 
 Though the `kamerton` invocation looks like a python generator that runs in a
 loop, it actually ends up executing the inner code once per spawned process.
+
+
+## Limitations
+
+Kamerton does not work within Jupyter notebooks because the forking approach
+would attempt to fork the entire notebook.

@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 
 """
-Kamerton: the forking tuner for tensorflow.
+Kamerton: the forking tuner.
 """
 
 import os
 import sys
 from statistics import stdev
-from typing import List, Callable, Tuple, Any, Generator, Sequence
+from typing import List, Callable, Tuple, Any, Generator, Sequence, Optional
 import logging
 
 __all__ = ['logger', 'nelder_mead', 'set_log_level']
 
 
-Callback = Callable[[List[float]], None]
+Callback = Callable[[List[List[Any]]], None]
 SimplexWithObjectives = List[List[List[float]]]
 
 
@@ -24,7 +24,7 @@ logger.addHandler(_logger_handler)
 
 
 def _make_simplex(vertex: Sequence,
-                  step_sizes: Any = None) -> List[List[float]]:
+                  step_sizes: Optional[List[int]] = None) -> List[List[float]]:
   dim = len(vertex)
   step_sizes = step_sizes or [1 for i in range(dim)]
   assert dim == len(step_sizes)
@@ -39,7 +39,7 @@ def _make_simplex(vertex: Sequence,
   return simplex
 
 
-def _do_fork(cb: Callback, params: List[float]) -> Tuple[bool, Any]:
+def _do_fork() -> Tuple[bool, Any]:
   r, w = os.pipe()
   pid = os.fork()
 
@@ -56,7 +56,6 @@ def _do_fork(cb: Callback, params: List[float]) -> Tuple[bool, Any]:
   os.close(r)
   write = os.fdopen(w, 'w')
   sys.stdout = write
-  cb(params)
   return (False, None)
 
 
@@ -93,9 +92,9 @@ def _shrink(simplex: SimplexWithObjectives) -> None:
                      zip(simplex[0][1], simplex[i][1])]
 
 
-def nelder_mead(cb: Callback, vertex: Sequence,
-                step_sizes: Any = None, iterations: int = 200,
-                threshold: float = 1e-2) -> Generator:
+def nelder_mead(vertex: Sequence, step_sizes: Optional[List[int]] = None,
+                iterations: int = 200, threshold: float = 1e-2,
+                cb: Optional[Callback] = None) -> Generator:
   """
   The Nelder-Mead-based forking tuner.  See the project README.md or
   `kamerton.examples` for details.
@@ -112,7 +111,7 @@ def nelder_mead(cb: Callback, vertex: Sequence,
 
   # compute initial vertices' objectives
   for index in range(len_simplex):
-    is_parent, value = _do_fork(cb, simplex[index][1])
+    is_parent, value = _do_fork()
     if not is_parent:
       yield VertexType(simplex[index][1])
       return
@@ -122,9 +121,12 @@ def nelder_mead(cb: Callback, vertex: Sequence,
   for _ in range(iterations):
     # 1. Order, check early termination
     simplex = sorted(simplex)
+    typed_simplex = [[VertexType(v), o] for o, v in simplex]
+    if cb is not None:
+      cb(typed_simplex)
     logger.info('simplexes with objectives:')
-    for objective, vertex in simplex:
-      logger.info(f'\t{VertexType(vertex)}: {objective}')
+    for vertex, objective in typed_simplex:
+      logger.info(f'\t{vertex}: {objective}')
     if stdev([s[0] for s in simplex]) < threshold:
       break
 
@@ -133,7 +135,7 @@ def nelder_mead(cb: Callback, vertex: Sequence,
 
     # 3. Reflection
     reflected = _reflect(simplex, center)
-    is_parent, value = _do_fork(cb, reflected)
+    is_parent, value = _do_fork()
     if not is_parent:
       yield VertexType(reflected)
       return
@@ -144,7 +146,7 @@ def nelder_mead(cb: Callback, vertex: Sequence,
     # 4. Expansion
     if value < simplex[0][0]:
       expanded = _expand(reflected, center)
-      is_parent, value_expanded = _do_fork(cb, expanded)
+      is_parent, value_expanded = _do_fork()
       if not is_parent:
         yield VertexType(expanded)
         return
@@ -156,7 +158,7 @@ def nelder_mead(cb: Callback, vertex: Sequence,
 
     # 5. Contraction
     contracted = _contract(simplex, center)
-    is_parent, value = _do_fork(cb, contracted)
+    is_parent, value = _do_fork()
     if not is_parent:
       yield VertexType(contracted)
       return
@@ -167,14 +169,13 @@ def nelder_mead(cb: Callback, vertex: Sequence,
     # 6. Shrink
     _shrink(simplex)
     for i in range(1, len(simplex)):
-      is_parent, value = _do_fork(cb, simplex[i][1])
+      is_parent, value = _do_fork()
       if not is_parent:
         yield VertexType(simplex[i][1])
         return
       simplex[i][0] = value
 
   # parent cleanup
-  cb(simplex[0][1])
   yield VertexType(simplex[0][1])
   return
 
