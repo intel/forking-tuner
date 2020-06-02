@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from kamerton.util import set_threading
+from kamerton.tf import set_threading
 
 
 def test_set_threading():
