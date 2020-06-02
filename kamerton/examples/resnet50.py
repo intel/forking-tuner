@@ -11,13 +11,19 @@ that will increase the runtime considerably.
 
 import logging
 import os
+import sys
 import timeit
 from collections import namedtuple
 
-import numpy as np
+try:
+  import numpy as np
+except ImportError:
+  print("Please install numpy and tensorflow to run this example.")
+  sys.exit(-1)
+
 
 from kamerton import nelder_mead, set_log_level
-from kamerton.util import set_threading
+from kamerton.tf import set_threading
 
 
 def main():
@@ -25,7 +31,11 @@ def main():
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # noqa
 
   # this needs to be imported after the tf's log level environ is set
-  from tensorflow.keras.applications.resnet50 import ResNet50  # noqa
+  try:
+    from tensorflow.keras.applications.resnet50 import ResNet50  # noqa
+  except ImportError:
+    print("Please install tensorflow to run this example.")
+    sys.exit(-1)
 
   threading = namedtuple('threading', ['intra_op', 'inter_op'])
 
@@ -38,7 +48,8 @@ def main():
     # sets the threading model and that has to happen before any tensors
     # are instantiated
     res = ResNet50()
-    print(attempt)
+    print(f"Optimal configuration: {int(attempt[0])} intra-op threads, "
+          f"{int(attempt[1])} inter-op threads.")
     print(timeit.timeit(lambda: res.predict(np.random.rand(32, 224, 224, 3),
                                             32), number=1))
 

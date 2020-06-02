@@ -25,7 +25,7 @@ You could wrap it using the `kamerton` generator like so:
     
     import timeit
     from kamerton import nelder_mead
-    from kamerton.util import set_threading
+    from kamerton.tf import set_threading
 
     # the vertex here represents the initial thread counts
     for attempt in nelder_mead(vertex=[22, 2]):
@@ -63,3 +63,9 @@ loop, it actually ends up executing the inner code once per spawned process.
 
 Kamerton does not work within Jupyter notebooks because the forking approach
 would attempt to fork the entire notebook.
+
+
+## Running Tests
+
+    pip install tox
+    tox
