@@ -38,8 +38,8 @@ except ImportError:
   sys.exit(-1)
 
 
-from kamerton import nelder_mead, set_log_level
-from kamerton.tf import set_threading
+from forking_tuner import nelder_mead, set_log_level
+from forking_tuner.tf import set_threading
 
 
 def main():
@@ -60,9 +60,9 @@ def main():
   for attempt in nelder_mead(threading(22, 2), [11, 1], threshold=0.02,
                              iterations=10):
     set_threading(attempt)
-    # N.B. ResNet50 creation has to happen inside this loop because kamerton
-    # sets the threading model and that has to happen before any tensors
-    # are instantiated
+    # N.B. ResNet50 creation has to happen inside this loop because
+    # 'forking-tuner' sets the threading model and that has to happen before any
+    # tensors are instantiated
     res = ResNet50()
     print(f"Optimal configuration: {int(attempt[0])} intra-op threads, "
           f"{int(attempt[1])} inter-op threads.")

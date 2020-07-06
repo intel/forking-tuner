@@ -21,7 +21,7 @@ A simple quadratic example that minimizes the `(x - 5) ** 2 + (x - 7) ** 2`
 function and provides sample callback usage..
 """
 
-from kamerton import nelder_mead
+from forking_tuner import nelder_mead
 
 
 # minimizes a quadratic function

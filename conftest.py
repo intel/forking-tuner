@@ -39,8 +39,8 @@ logging.basicConfig = MagicMock()
 logging.setLoggerClass = MagicMock()
 
 
-MODULES = ('kamerton',)
-MODULES_REPLACE = ('tests', 'kamerton')
+MODULES = ('forking_tuner',)
+MODULES_REPLACE = ('tests', 'forking_tuner')
 
 
 @pytest.fixture

@@ -21,9 +21,9 @@ from copy import deepcopy
 from mock import MagicMock, sentinel, call
 from pytest import fixture, mark
 
-from kamerton import logger, nelder_mead, set_log_level
-from kamerton import _make_simplex, _do_fork, _centroid, _reflect, _expand
-from kamerton import _contract, _shrink
+from forking_tuner import logger, nelder_mead, set_log_level
+from forking_tuner import _make_simplex, _do_fork, _centroid, _reflect, _expand
+from forking_tuner import _contract, _shrink
 
 
 simplex = [[1, [2, 3]], [2, [4, 7]], [3, [9, 11]]]
