@@ -17,7 +17,7 @@
 #
 
 """
-TensorFlow utility configuration callbacks for kamerton.
+TensorFlow utility configuration callbacks for forking-tuner.
 """
 
 from typing import List

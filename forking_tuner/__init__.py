@@ -17,7 +17,7 @@
 #
 
 """
-Kamerton: the forking tuner.
+forking-tuner: The Forking Tuner.
 """
 
 import os
@@ -112,8 +112,8 @@ def nelder_mead(vertex: Sequence, step_sizes: Optional[List[int]] = None,
                 iterations: int = 200, threshold: float = 1e-2,
                 cb: Optional[Callback] = None) -> Generator:
   """
-  The Nelder-Mead-based forking tuner.  See the project README.md or
-  `kamerton.examples` for details.
+  The Nelder-Mead-based Forking Tuner.  See the project README.md or
+  `forking_tuner.examples` for details.
   """
   VertexType = type(vertex)  # type: Any
   try:
@@ -198,6 +198,7 @@ def nelder_mead(vertex: Sequence, step_sizes: Optional[List[int]] = None,
 
 def set_log_level(level):
   """
-  Sets the kamerton log level.  Try `logging.INFO` for detailed iteration logs.
+  Sets the forking-tuner log level.
+  Try `logging.INFO` for detailed iteration logs.
   """
   logger.setLevel(level)

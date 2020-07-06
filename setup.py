@@ -19,14 +19,15 @@
 from setuptools import setup, find_packages
 
 
-NAME = "kamerton"
+NAME = "forking-tuner"
 VERSION = "0.1.0"
 
 
 setup(name=NAME,
       version=VERSION,
-      description="The forking tuner for tensorflow.",
-      author_email="igor.kaplounenko@intel.com",
+      description="Forking Tuner for TensorFlow.",
+      author='Intel Corporation',
+      author_email='intelai@intel.com',
       url="",
       keywords=["tensorflow"],
       packages=find_packages(),

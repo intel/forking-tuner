@@ -17,7 +17,7 @@
 
 import tensorflow as tf
 
-from kamerton.tf import set_threading
+from forking_tuner.tf import set_threading
 
 
 def test_set_threading():
